@@ -8,18 +8,23 @@ COPY package.json npm-shrinkwrap.json $HOME/app/
 
 COPY src/ $HOME/app/src
 
-ADD https://github.com/Yelp/dumb-init/releases/download/v1.1.1/dumb-init_1.1.1_amd64 /usr/local/bin/dumb-init
+# ADD https://github.com/Yelp/dumb-init/releases/download/v1.1.1/dumb-init_1.1.1_amd64 /usr/local/bin/dumb-init
 
 WORKDIR $HOME/app
 
-RUN chown -R nupp:nupp $HOME/* /usr/local/ && \
-    chmod +x /usr/local/bin/dumb-init && \
-    npm cache clean && \
-    npm install --silent --progress=false --production && \
-    chown -R nupp:nupp $HOME/*
+# RUN chown -R nupp:nupp $HOME/* /usr/local/ && \
+#     chmod +x /usr/local/bin/dumb-init && \
+#     npm cache clean && \
+#     npm install --silent --progress=false --production && \
+#     chown -R nupp:nupp $HOME/*
+
+RUN npm cache clean && \
+    npm install --silent --progress=false --production
 
 USER nupp
 
 EXPOSE 3000
 
-CMD ["dumb-init", "npm", "start"]
+# CMD ["dumb-init", "npm", "start"]
+
+CMD ["node", "src/index.js"]
