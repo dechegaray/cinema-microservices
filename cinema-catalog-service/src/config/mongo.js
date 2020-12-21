@@ -2,21 +2,21 @@ const MongoClient = require("mongodb");
 
 const connect = (options, mediator) => {
   mediator.once("boot.ready", () => {
-    MongoClient.connect(
-      `mongodb://${options.server}/${options.db}`,
-      (err, db) => {
-        if (err) {
-          mediator.emit("db.error", err);
-        }
+    const MONGO_URL = `mongodb://${options.user}:${options.pass}@${options.server}/${options.db}`;
 
-        db.admin().authenticate(options.user, options.pass, (err, result) => {
-          if (err) {
-            mediator.emit("db.error", err);
-          }
-          mediator.emit("db.ready", db);
-        });
+    MongoClient.connect(MONGO_URL, (err, db) => {
+      if (err) {
+        mediator.emit("db.error", err);
       }
-    );
+
+      console.log("URL:", MONGO_URL);
+
+      if (db) {
+        mediator.emit("db.ready", db);
+      } else {
+        mediator.emit("db.error", err);
+      }
+    });
   });
 };
 
