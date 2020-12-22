@@ -11,8 +11,6 @@ WORKDIR $HOME/app
 RUN npm cache clean && \
     npm install --silent --progress=false --production
 
-USER nupp
-
 EXPOSE 3000
 
-CMD ["node", "src/index.js"]
+CMD ["npm", "start"]
