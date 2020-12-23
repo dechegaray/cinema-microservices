@@ -1,4 +1,4 @@
-FROM node:7.5.0-alpine
+FROM node:14.15.3-alpine3.12
 
 ENV HOME=/home
 
@@ -8,7 +8,7 @@ COPY src/ $HOME/app/src
 
 WORKDIR $HOME/app
 
-RUN npm cache clean && \
+RUN npm cache clean --force && \
     npm install --silent --progress=false --production
 
 EXPOSE 3000
