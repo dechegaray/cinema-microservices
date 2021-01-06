@@ -1,39 +1,8 @@
-# Build a NodeJS microservice and deploy it to Docker
+# Original Repo and Blog Post
 
-![](./cover.png)
+### Repo
 
-This is the repo example for the article.
-
-### Stack
-We’ll use a simple NodeJS service with a MongoDB for our backend.
-- NodeJS 7.5.0
-- MongoDB 3.4.2
-- Docker for Mac 1.13.0
-
-### Microservices
-
-- [Movies Service example](./movies-service)
-- [Cinema Catalog Service example](./cinema-catalog-service)
-- [Booking Service example](./booking-service)
-- [Payment Service example](./payment-service)
-- [Notification Service example](./notification-service)
-- [API Gateway Service example](./api-gateway)
-
-### How to run the cinema microservice
-
-We need to have docker installed previously.
-
-```
-$ bash < kraken.sh
-```
-
-This will basically install every microservice and setup the docker swarm cluster
-
-and deploy every docker service in the swarm.
-
-To monitor the cluster in a graphic mode we can go and visit the following url: `http://192.168.99.100:9000`
-
-and this will give us the rancherOS web interface.
+https://github.com/Crizstian/cinema-microservice
 
 ### Blog posts
 
@@ -43,13 +12,308 @@ and this will give us the rancherOS web interface.
 - [Build a NodeJS cinema microservice and deploying it with docker (part 4)](https://medium.com/@cramirez92/build-a-nodejs-cinema-api-gateway-and-deploying-it-to-docker-part-4-703c2b0dd269#.en6g5buwl)
 - [Deploy a Nodejs microservices to a Docker Swarm Cluster (Docker from zero to hero)](https://medium.com/@cramirez92/deploy-a-nodejs-microservices-to-a-docker-swarm-cluster-docker-from-zero-to-hero-464fa1369ea0#.548ni3uxv)
 
-### LICENSE
-The MIT License (MIT)
+# Cinema Apps Deployment
 
-Copyright (c) 2017 Cristian Ramirez
+The cinema apps deployment is a simple exercise that illustrates how easy is to deploy a microservice architecture to Kubernetes when using Shipa.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+The whole suite is composed by 6 NodeJS applications interacting between each other to provide different sets of data that combined together populate a given UI. Each application talks to a different MongoDB database to retrieve the desired information and exposes REST API endpoints to be consumed by the UI. The UI requests data from different endpoints and offer a simple interface to users to see the information generated in these independent apps.
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The whole suite is defined by the following applications:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+- Movies <- REST API that connects to a MongoDB database and retrieves a list of movies
+- Cinema Catalog <- REST API that connects to a MongoDB database and retrieves a list of movie theaters
+- Payment <- REST API that connects to a third-party payment service (Stripe) and retrieves results of payment operations
+- Notification <- REST API that receives details of a certain transaction and sends them to user by email (fake emailing process)
+- Booking <- REST API that connects to Payment and Notifications to register purchase of certain movies.
+- UI (future) <- Web application that talks to all previous services and offers a cinema like e-commerce experience to book movies.
+
+## Databases - MongoDB Service
+
+Some of the previous applications require a database to persist/read information that will be exposed later on by the API; therefore, having access to a MongoDB service is required.
+
+**Shipa Testing MongoDB**
+Host: 34.83.231.158
+Port: 27017
+User: shipa
+Pass: shipa2020
+
+Log into the service posted above and create the DBs required for every case
+
+### Movies DB
+
+```sh
+mongo -u shipa 34.83.231.158:27017
+
+# Verify if databases already exist
+show dbs
+
+# Create your "movies" DB
+use movies
+
+# Create a user for the DB
+db.createUser(
+   {
+     user: "shipau",
+     pwd: "shipapass"
+     roles: [
+       { role: 'userAdmin', db: 'movies' },
+       { role: 'dbAdmin', db: 'movies' },
+       { role: 'readWrite', db: 'movies' }
+       ]
+   }
+)
+
+# Exit the current user and log with the recently created one
+exit
+
+mongo -u shipau 34.83.231.158:27017/movies
+
+# Insert some DB records
+db.movies.insertMany([
+  {"id" : "1", "title" : "Assasins Creed", "runtime" : 115, "format" : "IMAX", "plot" : "Lorem ipsum dolor sit amet", "releaseYear" : 2017, "releaseMonth" : 1, "releaseDay" : 6 }
+  {"id" : "2", "title" : "Aliados", "runtime" : 124, "format" : "IMAX", "plot" : "Lorem ipsum dolor sit amet", "releaseYear" : 2017, "releaseMonth" : 1, "releaseDay" : 13 }
+  {"id" : "3", "title" : "xXx: Reactivado", "runtime" : 107, "format" : "IMAX", "plot" : "Lorem ipsum dolor sit amet", "releaseYear" : 2017, "releaseMonth" : 1, "releaseDay" : 20 }
+  {"id" : "4", "title" : "Resident Evil: Capitulo Final", "runtime" : 107, "format" : "IMAX", "plot" : "Lorem ipsum dolor sit amet", "releaseYear" : 2017, "releaseMonth" : 1, "releaseDay" : 27 }
+  {"id" : "5", "title" : "Moana: Un Mar de Aventuras", "runtime" : 114, "format" : "IMAX", "plot" : "Lorem ipsum dolor sit amet", "releaseYear" : 2016, "releaseMonth" : 12, "releaseDay" : 2 }
+])
+```
+
+### Cinema DB
+
+Required DB only if the endpoint to list movie theaters will be tested.
+
+```sh
+mongo -u shipa 34.83.231.158:27017
+
+# Verify if databases already exist
+show dbs
+
+# Create your "cinema" DB
+use cinema
+
+# Create a user for the DB
+db.createUser(
+   {
+     user: "shipau",
+     pwd: "shipapass",
+     roles: [
+       { role: 'userAdmin', db: 'cinema' },
+       { role: 'dbAdmin', db: 'cinema' },
+       { role: 'readWrite', db: 'cinema' }
+       ]
+   }
+)
+
+# Exit the current user and log with the recently created one
+exit
+
+mongo -u shipau 34.83.231.158:27017/cinema
+
+# Insert some DB records
+mongoimport --jsonArray --db cinema --collection docs --file ~/your_path/cinema-catalog-service/src/mock/countries.json
+mongoimport --jsonArray --db cinema --collection docs --file ~/your_path/cinema-catalog-service/src/mock/states.json
+mongoimport --jsonArray --db cinema --collection docs --file ~/your_path/cinema-catalog-service/src/mock/cities.json
+mongoimport --jsonArray --db cinema --collection docs --file ~/your_path/cinema-catalog-service/src/mock/cinemas.json
+```
+
+### Booking DB
+
+```sh
+mongo -u shipa 34.83.231.158:27017
+
+# Verify if databases already exist
+show dbs
+
+# Create your "movies" DB
+use booking
+
+# Create a user for the DB
+db.createUser(
+   {
+     user: "shipau",
+     pwd: "shipapass",
+     roles: [
+       { role: 'userAdmin', db: 'booking' },
+       { role: 'dbAdmin', db: 'booking' },
+       { role: 'readWrite', db: 'booking' }
+       ]
+   }
+)
+
+# Exit the current user and log with the recently created one
+exit
+```
+
+## Applications
+
+To create/deploy all the applications required by this suite, please follow the instructions placed below.
+
+As a summary, all applications will involve:
+
+Once:
+
+- Creating a new pool to host your applications
+- Adding the new pool to an existing cluster
+
+Per app:
+
+- Creating a Shipa application as a shell for your app
+- Adding some ENV variables to them to connect them to databases/third-party services (Stripe)
+- Deploying the application from a Docker hub image
+
+**Note:** Consider that any of the steps can be achieved by using Shipa's Dashboard directly
+
+### Pre-app creation steps
+
+- Create a new pool with the name an ingress of your preference
+
+```sh
+shipa pool add pool-istio --provisioner kubernetes --ingress istio
+```
+
+- Add the new pool to the default Shipa cluster or the cluster of your preference
+
+```sh
+shipa cluster update shipa-cluster --pool shipa-pool --pool pool-istio
+```
+
+### Movies
+
+- Create an application called `movies` (https://hub.docker.com/repository/docker/dechegaray/movies)
+
+```sh
+shipa app create movies --team admin --pool pool-istio
+
+shipa env-set -a movies DB_SERVER=34.83.231.158:27017 DB_USER=shipau DB_PASS=shipapass DB=movies
+
+shipa app deploy -a movies -i dechegaray/movies
+```
+
+### Cinema catalog
+
+- Create an application called `cinema` (https://hub.docker.com/repository/docker/dechegaray/cinema)
+
+```sh
+shipa app create cinema --team admin --pool pool-istio
+
+shipa env-set -a cinema DB_SERVER=34.83.231.158:27017 DB_USER=shipau DB_PASS=shipapass DB=cinema
+
+shipa app deploy -a cinema -i dechegaray/cinema
+```
+
+### Notifications
+
+- Create an application called `notifications` (https://hub.docker.com/repository/docker/dechegaray/notifications)
+
+```sh
+shipa app create notifications --team admin --pool pool-istio
+
+shipa app deploy -a notifications -i dechegaray/notifications
+```
+
+### Payment
+
+- Create an application called `payment` (https://hub.docker.com/repository/docker/dechegaray/payments)
+
+```sh
+shipa app create payment --team admin --pool pool-istio
+
+shipa env-set -a payment DB_SERVER=34.83.231.158:27017 DB_USER=shipau DB_PASS=shipapass DB=booking STRIPE_SECRET=your_secret STRIPE_PUBLIC=your_token
+
+shipa app deploy -a payment -i dechegaray/payments
+```
+
+### Booking
+
+- Create an application called `booking` (https://hub.docker.com/repository/docker/dechegaray/booking)
+
+```sh
+shipa app create booking --team admin --pool pool-istio
+
+shipa env-set -a booking DB_SERVER=34.83.231.158:27017 DB_USER=shipau DB_PASS=shipapass DB=booking NOTIFICATION_API_HOST=your_app_endpoint PAYMENT_API_HOST=your_app_endpoint
+
+shipa app deploy -a booking -i dechegaray/booking
+```
+
+**Optional:**
+
+To give more security to applications handling sensitive data, you can set your own network policies so `payment` does not allow traffic from any other app different than `booking` as its ingress. If that's the case, you can use Shipa's internal DNS to connect `payment` and `booking` together:
+
+- Re-set your ENV variable and use Shipa's internal DNS as the app endpoint
+
+```sh
+shipa env-set -a booking PAYMENT_API_HOST=app-payments.pool-istio.svc:3000
+```
+
+### UI (To be defined...)
+
+- Create an application called `ui-cinema` (https://hub.docker.com/repository/docker/dechegaray/ui-cinema)
+
+```sh
+shipa app create ui-cinema --team admin --pool pool-istio
+
+shipa env-set -a ui-cinema API_HOST_CINEMA=your_cinema_endpoint API_HOST_MOVIES=your_movies_endpoint API_HOST_booking=your_booking_endpoint
+
+shipa app deploy -a ui-cinema -i dechegaray/ui-cinema
+```
+
+## Testing the applications
+
+1. Directly from REST API endpoints
+
+- Movies -> Run a GET request to `{APP_ENDPOINT}/movies`
+- Cinema -> Run a GET request to `{APP_ENDPOINT}/cinemas/588ac3a02d029a6d15d0b5c4`
+
+```json
+{
+  "cityd": "588ababf2d029a6d15d0b5bf"
+}
+```
+
+- Payments -> Run a POST request to `{APP_ENDPOINT}/payment/makePurchase`
+
+```json
+{
+  "paymentOrder": {
+    "userName": "daniel",
+    "currency": "USD",
+    "number": "4111111111111111",
+    "cvc": 342,
+    "exp_month": 10,
+    "exp_year": 2022,
+    "amount": 100,
+    "description": "Fake purchase"
+  }
+}
+```
+
+- Booking -> Run a POST request to `{APP_ENDPOINT}/booking`
+
+```json
+{
+  "user": {
+    "name": "Daniel",
+    "lastName": "Echegaray",
+    "email": "test@test.com",
+    "creditCard": {
+      "number": "4242424242424242",
+      "cvc": "123",
+      "exp_month": "11",
+      "exp_year": "2023"
+    },
+    "membership": "7777888899990000"
+  },
+  "booking": {
+    "city": "Morelia",
+    "cinema": "Plaza Morelia",
+    "movie": {
+      "title": "Assasins Creed",
+      "format": "IMAX"
+    },
+    "schedule": "Fri Jan 8 2021 23:03:48 GMT-0500 (Eastern Standard Time)", // Make sure the date is a FUTURE date
+    "cinemaRoom": 7,
+    "seats": ["45"],
+    "totalAmount": 15
+  }
+}
+```
