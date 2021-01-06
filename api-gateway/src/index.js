@@ -1,37 +1,47 @@
-'use strict'
-const {EventEmitter} = require('events')
-const server = require('./server/server')
-const docker = require('./docker/docker')
-const di = require('./config')
-const mediator = new EventEmitter()
+const express = require("express");
+const cors = require("cors");
+const { createProxyMiddleware } = require("http-proxy-middleware");
 
-console.log('--- API Gateway Service ---')
-console.log('Connecting to API repository...')
+const app = express();
+app.use(cors());
+app.options("*", cors());
 
-process.on('uncaughtException', (err) => {
-  console.error('Unhandled Exception', err)
-})
+app.use(
+  "/api/mov",
+  createProxyMiddleware({
+    target: `http://${process.env.API_MOVIES}`,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/mov": "", // remove base path
+    },
+    logLevel: "debug",
+  })
+);
 
-process.on('uncaughtRejection', (err, promise) => {
-  console.error('Unhandled Rejection', err)
-})
+app.use(
+  "/api/cin",
+  createProxyMiddleware({
+    target: `http://${process.env.API_CINEMA}`,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/cin": "", // remove base path
+    },
+    logLevel: "debug",
+  })
+);
 
-mediator.on('di.ready', (container) => {
-  docker.discoverRoutes(container)
-    .then(routes => {
-      console.log('Connected. Starting Server')
-      container.registerValue({routes})
-      return server.start(container)
-    })
-    .then(app => {
-      console.log(`Connected to Docker: ${container.cradle.dockerSettings.host}`)
-      console.log(`Server started succesfully, API Gateway running on port: ${container.cradle.serverSettings.port}.`)
-      app.on('close', () => {
-        console.log('Server finished')
-      })
-    })
-})
+app.use(
+  "/api/book",
+  createProxyMiddleware({
+    target: `http://${process.env.API_BOOKING}`,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/book": "", // remove base path
+    },
+    logLevel: "debug",
+  })
+);
 
-di.init(mediator)
+app.listen(3000);
 
-mediator.emit('init')
+console.log("[DEMO] Server: listening on port 3000");

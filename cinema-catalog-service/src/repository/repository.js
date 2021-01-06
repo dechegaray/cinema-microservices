@@ -7,8 +7,7 @@ const repository = (connection) => {
     return new Promise((resolve, reject) => {
       const cinemas = [];
       const query = { city_id: cityId };
-      const projection = { _id: 1, name: 1 };
-      const cursor = db.collection("cinemas").find(query, projection);
+      const cursor = db.collection("cinemas").find(query);
       const addCinema = (cinema) => {
         cinemas.push(cinema);
       };

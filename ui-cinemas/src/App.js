@@ -16,14 +16,18 @@ function App() {
         <h4>Your own movie theater booking platform</h4>
       </header>
 
-      <main>
-        <Movies />
-        <Cinemas onMovieSelect={setSelectedMovie} />
-        <Booking
-          order={selectedMovie}
-          onComplete={() => setSelectedMovie(undefined)}
-        />
-      </main>
+      <section className="main-content">
+        <main>
+          <Movies />
+          <Cinemas onMovieSelect={setSelectedMovie} />
+        </main>
+        <aside>
+          <Booking
+            movie={selectedMovie}
+            onComplete={() => setSelectedMovie(undefined)}
+          />
+        </aside>
+      </section>
     </div>
   );
 }

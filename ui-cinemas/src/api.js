@@ -1,5 +1,10 @@
 import axios from "axios";
-import "./cities.json";
+
+const API_SERVER = process.env.REACT_APP_API_SERVER;
+
+const URL_MOVIES = `http://${API_SERVER}/api/mov`;
+const URL_CINEMAS = `http://${API_SERVER}/api/cin`;
+const URL_BOOKING = `http://${API_SERVER}/api/book`;
 
 function getErrorMessage(error, defaultText) {
   const { data, status, statusText } = error.response;
@@ -10,14 +15,8 @@ function getErrorMessage(error, defaultText) {
 }
 
 export function fetchMovies() {
-  const baseUrl = process.env.API_HOST_MOVIES;
-
-  if (!baseUrl) {
-    throw new Error("Movies API host was not defined!");
-  }
-
   return axios
-    .get(`${baseUrl}/movies`)
+    .get(`${URL_MOVIES}/movies`)
     .then(({ data }) => data)
     .catch((error) => {
       const errorMsg = getErrorMessage(
@@ -28,15 +27,9 @@ export function fetchMovies() {
     });
 }
 
-export function fetchCinemas(cityId) {
-  const baseUrl = process.env.API_HOST_CINEMA;
-
-  if (!baseUrl) {
-    throw new Error("Cinema API host was not defined!");
-  }
-
+export function fetchCinemasByCityId(cityId) {
   return axios
-    .get(`${baseUrl}/cinemas`, { data: { cityId } })
+    .get(`${URL_CINEMAS}/cinemas?cityId=${cityId}`)
     .then(({ data }) => data)
     .catch((error) => {
       const errorMsg = getErrorMessage(
@@ -48,14 +41,8 @@ export function fetchCinemas(cityId) {
 }
 
 export function fetchCinema(id) {
-  const baseUrl = process.env.API_HOST_CINEMA;
-
-  if (!baseUrl) {
-    throw new Error("Cinema API host was not defined!");
-  }
-
   return axios
-    .get(`${baseUrl}/cinemas/${id}`)
+    .get(`${URL_CINEMAS}/cinemas/${id}`)
     .then(({ data }) => data)
     .catch((error) => {
       const errorMsg = getErrorMessage(
@@ -67,14 +54,8 @@ export function fetchCinema(id) {
 }
 
 export function fetchCountries() {
-  const baseUrl = process.env.API_HOST_CINEMA;
-
-  if (!baseUrl) {
-    throw new Error("Cinema API host was not defined!");
-  }
-
   return axios
-    .get(`${baseUrl}/countries`)
+    .get(`${URL_CINEMAS}/countries`)
     .then(({ data }) => data)
     .catch((error) => {
       const errorMsg = getErrorMessage(
@@ -86,14 +67,8 @@ export function fetchCountries() {
 }
 
 export function fetchStates(countryId) {
-  const baseUrl = process.env.API_HOST_CINEMA;
-
-  if (!baseUrl) {
-    throw new Error("Cinema API host was not defined!");
-  }
-
   return axios
-    .get(`${baseUrl}/countries/${countryId}`)
+    .get(`${URL_CINEMAS}/countries/${countryId}`)
     .then(({ data }) => data)
     .catch((error) => {
       const errorMsg = getErrorMessage(
@@ -105,14 +80,8 @@ export function fetchStates(countryId) {
 }
 
 export function fetchCities(countryId, stateId) {
-  const baseUrl = process.env.API_HOST_CINEMA;
-
-  if (!baseUrl) {
-    throw new Error("Cinema API host was not defined!");
-  }
-
   return axios
-    .get(`${baseUrl}/countries/${countryId}/${stateId}`)
+    .get(`${URL_CINEMAS}/countries/${countryId}/${stateId}`)
     .then(({ data }) => data)
     .catch((error) => {
       const errorMsg = getErrorMessage(
@@ -123,15 +92,9 @@ export function fetchCities(countryId, stateId) {
     });
 }
 
-export function bookMovie() {
-  const baseUrl = process.env.API_HOST_BOOKING;
-
-  if (!baseUrl) {
-    throw new Error("Booking API host was not defined!");
-  }
-
+export function bookMovie(payload) {
   return axios
-    .post(`${baseUrl}/cinemas`)
+    .post(`${URL_BOOKING}/booking`, payload)
     .then(({ data }) => data)
     .catch((error) => {
       const errorMsg = getErrorMessage(

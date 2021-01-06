@@ -7,12 +7,13 @@ export function Movies() {
     "movies",
     () => fetchMovies(),
     {
-      retry: 1,
+      retry: 0,
     }
   );
 
   if (isError) {
     <section id="movies">
+      <h2>Latest Movies (Movies API)</h2>
       <p className="error-msg">
         {error || "There was an error fetching the data"}
       </p>
@@ -21,26 +22,35 @@ export function Movies() {
 
   if (isLoading) {
     <section id="movies">
+      <h2>Latest Movies (Movies API)</h2>
       <i className="loader"></i>
     </section>;
   }
 
   return (
     <section id="movies">
+      <h2>Latest Movies (Movies API)</h2>
       {isFetching && <i className="small-loader"></i>}
 
-      {data.map((movie) => {
-        return (
-          <div className="movie" key={movie.title}>
-            <img src={`./img/${movie.id}`} alt="Movie poster" />
-            <h5>{movie.title}</h5>
-            <h6>
-              {movie.releaseYear} / {movie.format}
-            </h6>
-            <p>{movie.plot}</p>
-          </div>
-        );
-      })}
+      <div className="movies-wrapper">
+        {data?.map((movie) => {
+          return (
+            <div className="movie" key={movie._id}>
+              <img
+                src={`../img/${movie.poster}`}
+                alt={`${movie.title} poster`}
+              />
+              <article>
+                <h3>{movie.title}</h3>
+                <h4>
+                  {movie.releaseYear} / {movie.format}
+                </h4>
+                <p>{movie.plot}</p>
+              </article>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
