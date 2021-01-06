@@ -1,17 +1,16 @@
-FROM node:7.5.0-alpine
+FROM node:14.15.3-alpine3.12
 
-ENV HOME=/home/nupp
+ENV HOME=/home
 
-COPY package.json npm-shrinkwrap.json $HOME/app/
+COPY package.json $HOME/app/
 
 COPY src/ $HOME/app/src
 
-ADD https://github.com/Yelp/dumb-init/releases/download/v1.1.1/dumb-init_1.1.1_amd64 /usr/local/bin/dumb-init
-
 WORKDIR $HOME/app
 
-RUN chmod +x /usr/local/bin/dumb-init && \
-    npm cache clean && \
+RUN npm cache clean --force && \
     npm install --silent --progress=false --production
 
-CMD ["dumb-init", "npm", "start"]
+EXPOSE 3000
+
+CMD ["npm", "start"]

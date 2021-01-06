@@ -29,7 +29,10 @@ mediator.on("di.ready", (container) => {
         `Server started succesfully, running on port: ${container.cradle.serverSettings.port}.`
       );
       console.log("Printing a dummy message");
+
       app.on("close", () => {
+        console.log(`disconnecting payment service from DB ${process.env.DB}`);
+
         container.resolve("repo").disconnect();
       });
     });
