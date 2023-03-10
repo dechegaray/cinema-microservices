@@ -114,10 +114,22 @@ exit
 mongo -u shipau 34.83.231.158:27017/cinema
 
 # Insert some DB records
+
+//Install mongo-tools
+sudo apt install mongo-tools
+
+// Locally
 mongoimport --jsonArray --db cinema --collection docs --file ~/your_path/cinema-catalog-service/src/mock/countries.json
 mongoimport --jsonArray --db cinema --collection docs --file ~/your_path/cinema-catalog-service/src/mock/states.json
 mongoimport --jsonArray --db cinema --collection docs --file ~/your_path/cinema-catalog-service/src/mock/cities.json
 mongoimport --jsonArray --db cinema --collection docs --file ~/your_path/cinema-catalog-service/src/mock/cinemas.json
+
+// OVER VM
+// Copy the backup JSON files into the VM
+mongoimport --username USER --password PASS --db cinema --collection countries --jsonArray --file ./countries.json
+mongoimport --username USER --password PASS --db cinema --collection states --jsonArray --file ./states.json
+mongoimport --username USER --password PASS --db cinema --collection cities --jsonArray --file ./cities.json
+mongoimport --username USER --password PASS --db cinema --collection cinemas --jsonArray --file ./cinemas.json
 ```
 
 ### Booking DB
